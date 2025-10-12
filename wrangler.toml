@@ -1,4 +1,4 @@
-name = "echi.link"
+name = "echi-ink"
 main = "./dist/_worker.js"
 compatibility_date = "2025-10-13"
 
