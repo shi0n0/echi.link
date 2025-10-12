@@ -1,0 +1,11 @@
+name = "echi.link"
+main = "./dist/_worker.js"
+compatibility_date = "2025-10-13"
+
+# Astro + Cloudflare Pages 用の設定
+pages_build_output_dir = "./dist"
+
+[[d1_databases]]
+binding = "ECHI_DB"
+database_name = "echi-db"
+database_id = "f22c7065-d2df-4f0a-9ce0-d9af8854924c"
