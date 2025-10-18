@@ -1,9 +1,16 @@
+---
+import SubmitModal from "./SubmitModal.astro";
+const appName = import.meta.env.APP_NAME ?? "Echi.link";
+---
 <header class="sticky top-0 z-50 backdrop-blur bg-black/50 border-b border-white/10">
   <div class="max-w-6xl mx-auto flex items-center justify-between p-4">
-    <a href="/" class="text-xl font-semibold text-fuchsia-400">Echi.link</a>
+    <a href="/" class="text-xl font-semibold text-fuchsia-400">{appName}</a>
     <nav class="flex items-center gap-3">
       <a href="/search" class="text-sm text-gray-300 hover:text-white">検索</a>
-      <a href="/submit" class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-1 rounded-lg text-sm">投稿</a>
+      <SubmitModal />
+      <!-- フォールバックとして従来のページ遷移を残すなら↓ -->
+      <!-- <a href="/submit" class="hidden sm:inline text-sm text-gray-400 hover:text-white">ページで投稿</a> -->
+     
     </nav>
   </div>
 </header>
