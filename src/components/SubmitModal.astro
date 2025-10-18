@@ -1,0 +1,163 @@
+---
+/** 投稿モーダル（開閉ともにフェード＋スケールアニメ付き） */
+---
+<button
+  id="open-submit"
+  class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-1 rounded-lg text-sm"
+>
+  投稿
+</button>
+
+<dialog
+  id="submit-dialog"
+  class="rounded-xl w-[min(92vw,520px)] bg-[#12131a] text-gray-100 shadow-2xl
+         opacity-0 scale-95 transition-all duration-200 ease-out p-0"
+>
+  <form id="submit-form" method="dialog" class="p-5 space-y-4">
+    <header class="flex items-center justify-between">
+      <h2 class="text-base font-semibold">リンクを投稿</h2>
+      <button type="button" id="close-submit" class="text-gray-400 hover:text-gray-200">✕</button>
+    </header>
+
+    <div class="space-y-2">
+      <label class="block text-sm">タイトル</label>
+      <input
+        name="title"
+        required
+        minlength="3"
+        maxlength="100"
+        class="w-full rounded-md bg-[#181a22] border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-fuchsia-600"
+      />
+    </div>
+
+    <div class="space-y-2">
+      <label class="block text-sm">URL</label>
+      <input
+        name="url"
+        type="url"
+        required
+        class="w-full rounded-md bg-[#181a22] border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-fuchsia-600"
+      />
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-2">
+      <button type="button" id="cancel-submit" class="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20">
+        キャンセル
+      </button>
+      <button type="submit" class="px-4 py-1.5 rounded-md bg-fuchsia-600 hover:bg-fuchsia-500 text-white">
+        投稿する
+      </button>
+    </div>
+
+    <p id="submit-msg" class="text-sm text-gray-400"></p>
+  </form>
+</dialog>
+
+<style is:global>
+  /* === 配置とアニメーション === */
+  #submit-dialog[open]{ inset:0; margin:auto; }
+
+  #submit-dialog{
+    opacity:0; transform:scale(.95);
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  #submit-dialog.is-open{ opacity:1; transform:scale(1); }
+  #submit-dialog.is-closing{ opacity:0; transform:scale(.95); }
+
+  /* === バックドロップ === */
+  #submit-dialog::backdrop{
+    background:rgba(255,255,255,0);
+    backdrop-filter:blur(0) saturate(1);
+    transition:background-color .2s ease, backdrop-filter .2s ease;
+  }
+  #submit-dialog.is-open::backdrop{
+    background:rgba(255,255,255,.20);
+    backdrop-filter:blur(6px) saturate(1.1);
+  }
+  #submit-dialog.is-closing::backdrop{
+    background:rgba(255,255,255,0);
+    backdrop-filter:blur(0) saturate(1);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #submit-dialog, #submit-dialog::backdrop{ transition:none !important; }
+  }
+</style>
+
+<script is:inline>
+  const dlg       = document.getElementById('submit-dialog');
+  const openBtn   = document.getElementById('open-submit');
+  const closeBtn  = document.getElementById('close-submit');
+  const cancelBtn = document.getElementById('cancel-submit');
+  const form      = document.getElementById('submit-form');
+  const msg       = document.getElementById('submit-msg');
+
+  const cardHTML = (d) => `
+    <article class="rounded-xl p-4 bg-[#12131a] ring-1 ring-white/10 hover:!ring-fuchsia-500/40 transition">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-sm font-medium truncate">${d.title}</h3>
+        <div class="flex gap-2">
+          <a href="#" class="js-open-detail text-xs px-2 py-1 rounded-md bg-white/10 hover:bg-white/20" data-id="${d.id}">詳細</a>
+          <a href="${d.url}" target="_blank" rel="noopener"
+             class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-1 rounded-md text-xs">開く</a>
+        </div>
+      </div>
+      <p class="text-[11px] text-gray-400 break-all mt-1">${d.url}</p>
+      <p class="text-[11px] text-gray-500 mt-1">アクセス: ${d.clicks ?? 0}</p>
+    </article>
+  `;
+
+  const open = () => {
+    dlg.showModal();
+    // “入り”アニメを確実に走らせる
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => dlg.classList.add('is-open'))
+    );
+    msg.textContent = "";
+  };
+
+  const close = () => {
+    dlg.classList.add('is-closing');
+    // 1フレーム遅らせてis-openを外すことでbackdrop遷移が確実に発火
+    requestAnimationFrame(() => dlg.classList.remove('is-open'));
+    dlg.addEventListener('transitionend', () => {
+      dlg.classList.remove('is-closing');
+      dlg.close();
+    }, { once: true });
+  };
+
+  openBtn?.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  cancelBtn?.addEventListener('click', close);
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.textContent = "送信中…";
+    const fd   = new FormData(form);
+    const body = JSON.stringify({ title: fd.get('title'), url: fd.get('url') });
+
+    try {
+      const res = await fetch('/api/post', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body
+      });
+      if (!res.ok) throw new Error('投稿に失敗しました');
+
+      const { item } = await res.json();
+      if (!item) throw new Error('レスポンスが不正です');
+
+      const grid = document.getElementById('grid');
+      if (grid) grid.insertAdjacentHTML('afterbegin', cardHTML(item));
+
+      dispatchEvent(new CustomEvent('echi:post-item', { detail: { item } }));
+
+      msg.textContent = "投稿しました。";
+      setTimeout(() => { form.reset(); close(); }, 200);
+    } catch (err) {
+      msg.textContent = String(err?.message || err);
+    }
+  });
+
+  dlg?.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
+</script>

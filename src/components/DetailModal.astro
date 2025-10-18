@@ -1,0 +1,79 @@
+---
+/** 一個だけ据え置いて、.js-open-detail をクリックすると中身を差し替えて開く */
+---
+<dialog id="detail-dialog" class="dlg">
+  <article class="p-5 space-y-3">
+    <header class="flex items-center justify-between">
+      <h3 id="detail-title" class="text-base font-semibold">Loading…</h3>
+      <button type="button" id="detail-close" class="text-gray-400 hover:text-gray-200">✕</button>
+    </header>
+    <p id="detail-url" class="text-sm text-gray-400 break-all"></p>
+    <div class="flex gap-2">
+      <a id="detail-open" class="px-3 py-1 rounded-md bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-sm" target="_blank" rel="noopener">開く</a>
+      <span id="detail-meta" class="text-xs text-gray-500 self-center"></span>
+    </div>
+  </article>
+</dialog>
+
+<script is:inline>
+  const dlg = document.getElementById('detail-dialog');
+  const btnClose = document.getElementById('detail-close');
+  const elTitle = document.getElementById('detail-title');
+  const elUrl = document.getElementById('detail-url');
+  const elOpen = document.getElementById('detail-open');
+  const elMeta = document.getElementById('detail-meta');
+
+  let abort = null;
+
+  async function openDetail(id) {
+    abort?.abort(); abort = new AbortController();
+
+    elTitle.textContent = "Loading…";
+    elUrl.textContent = "";
+    elOpen.setAttribute("href", "#");
+    elMeta.textContent = "";
+
+    dlg.showModal(); requestAnimationFrame(()=>dlg.classList.add('dlg--open'));
+    history.pushState({ v: id }, "", `?v=${id}`);
+
+    try {
+      const res = await fetch(`/api/link/${id}`, { signal: abort.signal });
+      if (!res.ok) throw new Error("not found");
+      const d = await res.json();
+      elTitle.textContent = d.title;
+      elUrl.textContent = d.url;
+      elOpen.setAttribute("href", d.url);
+      elMeta.textContent = `ID: ${d.id} / クリック: ${d.clicks}`;
+    } catch {}
+  }
+
+  function closeDetail() {
+    dlg.classList.remove('dlg--open');
+    dlg.addEventListener('transitionend', () => dlg.close(), { once: true });
+    const url = new URL(location.href); url.searchParams.delete("v"); history.pushState({}, "", url);
+  }
+
+  addEventListener("click", (e) => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    const btn = t.closest(".js-open-detail");
+    if (!btn) return;
+    const id = Number(btn.getAttribute("data-id"));
+    if (!Number.isFinite(id)) return;
+    e.preventDefault();
+    openDetail(id);
+  });
+
+  btnClose?.addEventListener("click", closeDetail);
+  dlg?.addEventListener("cancel", (e)=>{ e.preventDefault(); closeDetail(); });
+
+  // 直リンク対応 (?v=ID で開く)
+  const initV = new URL(location.href).searchParams.get("v");
+  if (initV) openDetail(Number(initV));
+
+  // 戻る/進む対応
+  addEventListener("popstate", () => {
+    const v = new URL(location.href).searchParams.get("v");
+    if (v) openDetail(Number(v)); else if (dlg.open) closeDetail();
+  });
+</script>

@@ -1,0 +1,28 @@
+<input id="q" name="q" placeholder="検索（タイトル・URL）" class="w-72 max-w-full rounded-md bg-[#181a22] border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-fuchsia-600 text-sm" />
+
+<script is:inline>
+  const q = document.getElementById('q');
+  let timer = 0, lastCtrl = null;
+
+  async function searchNow(term) {
+    lastCtrl?.abort(); lastCtrl = new AbortController();
+    const res = await fetch(`/api/search?q=${encodeURIComponent(term)}`, { signal: lastCtrl.signal });
+    if (!res.ok) return;
+    const data = await res.json();
+    dispatchEvent(new CustomEvent("echi:search", { detail: { data, term } }));
+
+    // URL 同期（?q=）
+    const url = new URL(location.href);
+    if (term) url.searchParams.set("q", term); else url.searchParams.delete("q");
+    history.replaceState({}, "", url);
+  }
+
+  q?.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = window.setTimeout(() => searchNow(q.value.trim()), 250);
+  });
+
+  // 初期値（?q=）で復元
+  const init = new URL(location.href).searchParams.get("q");
+  if (init) { q.value = init; searchNow(init); }
+</script>
