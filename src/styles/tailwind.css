@@ -1,1 +1,32 @@
 @import "tailwindcss";
+
+/* === Modal component styles === */
+.dlg {
+  border-radius: 0.75rem;
+  width: min(92vw, 520px);
+  background-color: #12131a;
+  color: #f3f4f6;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  padding: 0;
+}
+
+.dlg--open {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 中央配置だけは属性で固定（可読性のためユーティリティ不使用） */
+#submit-dialog[open] {
+  inset: 0;
+  margin: auto;
+}
+
+/* 背景は“白＋ブラー”を1か所で管理 */
+#submit-dialog::backdrop {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px) saturate(1.1);
+  transition: opacity 0.2s ease;
+}
