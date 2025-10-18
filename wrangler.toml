@@ -1,11 +1,11 @@
-name = "echi-ink"
-main = "./dist/_worker.js"
+name = "echi-link"
 compatibility_date = "2025-10-13"
+compatibility_flags = ["nodejs_compat"]
 
-# Astro + Cloudflare Pages 用の設定
+# Cloudflare Pages で dist を配信
 pages_build_output_dir = "./dist"
 
 [[d1_databases]]
-binding = "ECHI_DB"
+binding = "ECHI_DB" 
 database_name = "echi-db"
 database_id = "f22c7065-d2df-4f0a-9ce0-d9af8854924c"
