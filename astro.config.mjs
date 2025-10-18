@@ -5,5 +5,13 @@ import { defineConfig } from "astro/config";
 export default defineConfig({
   output: "server",
   adapter: cloudflare(),
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    server: {
+      watch: {
+        usePolling: true,
+      },
+    },
+    plugins: [tailwindcss()],
+  },
+  integrations: [],
 });
